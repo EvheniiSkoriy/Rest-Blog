@@ -1,44 +1,34 @@
 package com.jenia.blog.service.implementation;
 
+import com.jenia.blog.dto.PostDTOIn;
 import com.jenia.blog.model.Post;
 import com.jenia.blog.model.User;
-import com.jenia.blog.repository.RepositoryPost;
-import com.jenia.blog.service.ServicePost;
+import com.jenia.blog.repository.PostRepository;
+import com.jenia.blog.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class PostServiceImpl implements ServicePost {
+public class PostServiceImpl implements PostService {
 
-    private final RepositoryPost postRepository;
+    private final PostRepository postRepository;
 
     @Autowired
-    public PostServiceImpl(RepositoryPost postRepository) {
+    public PostServiceImpl(PostRepository postRepository) {
         this.postRepository = postRepository;
     }
 
-
     @Override
-    public List<Post> findAllPosts() {
+    public List<Post> findAll() {
         return postRepository.findAll();
     }
 
     @Override
-    public List<Post> findAllUserPosts(String username) {
-        List<Post> allPosts=postRepository.findAll();
-        List<Post> userPosts=new ArrayList<>();
-
-        for(Post post:allPosts){
-            if(post.getUser().getUsername().equals(username)){
-                userPosts.add(post);
-            }
-        }
-        return userPosts;
+    public List<Post> findAllUserPosts(User user) {
+        return postRepository.findByUser(user);
     }
 
     @Override
@@ -54,5 +44,12 @@ public class PostServiceImpl implements ServicePost {
     @Override
     public void delete(Post post) {
         postRepository.delete(post);
+    }
+
+    @Override
+    public Post edit(final Post post, final PostDTOIn postIn) {
+        post.merge(postIn);
+        save(post);
+        return post;
     }
 }

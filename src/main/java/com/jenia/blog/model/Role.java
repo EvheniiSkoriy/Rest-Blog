@@ -1,15 +1,13 @@
 package com.jenia.blog.model;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.Collection;
-import java.util.List;
+
 @Setter
 @Getter
 @Entity
@@ -20,8 +18,8 @@ public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "role_id")
-    private int id;
-    @Column(name = "role",unique = true)
+    private Integer id;
+    @Column(name = "role", unique = true)
     private String role;
     @ManyToMany(cascade = CascadeType.ALL, mappedBy = "roles")
     private Collection<User> users;

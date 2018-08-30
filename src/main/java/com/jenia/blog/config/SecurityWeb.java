@@ -1,60 +1,60 @@
 package com.jenia.blog.config;
 
 
+import com.jenia.blog.config.service.AuthUserDetailService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import javax.sql.DataSource;
 
 @Configuration
 public class SecurityWeb extends WebSecurityConfigurerAdapter {
 
-    final DataSource dataSource;
+    private static final String[] AUTH_WHITELIST = {
+            "/register/**"
+    };
 
-    @Value("${spring.admin.username}")
-    private String userName;
-    @Value("${spring.admin.password}")
-    private String password;
-    @Value("${spring.queries.users-query}")
-    private String usersQuery;
-    @Value("${spring.queries.roles-query}")
-    private String rolesQuery;
+    private final AuthFailedHandler restAuthenticationEntryPoint;
 
-    public SecurityWeb(DataSource dataSource) {
-        this.dataSource = dataSource;
+    private final AuthUserDetailService userService;
+
+    @Autowired
+    public SecurityWeb(AuthFailedHandler restAuthenticationEntryPoint, AuthUserDetailService userService) {
+        this.restAuthenticationEntryPoint = restAuthenticationEntryPoint;
+        this.userService = userService;
     }
 
     @Override
-    protected void configure(HttpSecurity http) throws Exception {
-//
-//        http.csrf().disable()
-//                .authorizeRequests()
-//                .antMatchers("/home", "/blog/**", "/post/**", "/h2-console/**").permitAll()
-//                .antMatchers("/newPost/**","/editPost/**").hasAnyRole("USER")
-//                .anyRequest().authenticated();
+    protected void configure(final HttpSecurity http) throws Exception {
+        http.csrf().disable();
+
+        http.authorizeRequests()
+                .antMatchers(AUTH_WHITELIST).permitAll()
+                .anyRequest().hasRole("PUBLISHER");
+
+        http.sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
+        http.httpBasic()
+                .authenticationEntryPoint(restAuthenticationEntryPoint);
 
     }
 
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        final DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userService);
+        authProvider.setPasswordEncoder(encoder());
+        return authProvider;
+    }
 
-////        // Database authentication
-//        auth.
-//                jdbcAuthentication()
-//                .usersByUsernameQuery(usersQuery)
-//                .authoritiesByUsernameQuery(rolesQuery)
-//                .dataSource(dataSource);
-//
-//
-//        // In memory authentication
-//        auth.inMemoryAuthentication()
-//                .withUser(userName).password(password).roles("PUBLISHER");
+    @Bean
+    public PasswordEncoder encoder() {
+        return NoOpPasswordEncoder.getInstance();
     }
 }

@@ -1,96 +1,149 @@
 package com.jenia.blog.controller;
 
+import com.jenia.blog.dto.PostDTOIn;
+import com.jenia.blog.dto.PostDTOOut;
+import com.jenia.blog.exception.NoAuthorityException;
+import com.jenia.blog.exception.ResourceNotFoundException;
 import com.jenia.blog.model.Post;
 import com.jenia.blog.model.User;
-import com.jenia.blog.service.ServicePost;
-import com.jenia.blog.service.ServiceUser;
+import com.jenia.blog.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
+@RequestMapping("/posts")
 public class PostController {
-    private final ServiceUser serviceUser;
-    private final ServicePost servicePost;
+
+    private final PostService postService;
 
     @Autowired
-    public PostController(ServiceUser serviceUser, ServicePost servicePost) {
-        this.serviceUser = serviceUser;
-        this.servicePost = servicePost;
+    public PostController(PostService postService) {
+        this.postService = postService;
     }
 
-    @PostMapping("/posts/newPost")
-    public String createdNewPost(@Valid Post post,
-                          BindingResult bindingResult){
-        if (bindingResult.hasErrors()) {
-            return "Post was not created";
+    @GetMapping
+    public List<PostDTOOut> getPosts(
+
+            @AuthenticationPrincipal(expression = "user")
+            final User user,
+
+            @RequestParam(defaultValue = "false")
+            final Boolean own
+    ) {
+        final List<Post> posts = new ArrayList<>();
+        if (own) {
+            posts.addAll(postService.findAllUserPosts(user));
         } else {
-            servicePost.save(post);
-            return "Post was created";
+            posts.addAll(postService.findAll());
         }
+        return posts.stream()
+                .map(post -> new PostDTOOut(post.getId(), post.getTitle(), post.getBody()))
+                .collect(Collectors.toList());
     }
 
-    @GetMapping("/posts/newPost")
-    public Post newPost(Post post){
-       Optional<User> user = serviceUser.findByUsername(post.getUser().getUsername());
-        if (user.isPresent()) {
-            post.setUser(user.get());
-            return post;
-        }else {
-            return null;
-        }
+    @PostMapping
+    public PostDTOOut createPost(
+
+            @AuthenticationPrincipal(expression = "user")
+            final User user,
+
+            @Valid
+            @NotNull
+            @RequestBody
+            final PostDTOIn postIn
+    ) {
+        final Post post = postService.save(new Post(postIn.getBody(), postIn.getTitle(), user));
+        return new PostDTOOut(post.getId(), post.getTitle(), post.getBody());
     }
 
-    @PutMapping("/editPost/{id}")
-    public Post editPostWithId(@PathVariable Integer id,User user){
-        Optional<Post> optionalPost = servicePost.findById(id);
+
+    @PutMapping("/{id}")
+    public PostDTOOut editPost(
+
+            @AuthenticationPrincipal(expression = "user")
+            final User user,
+
+            @PathVariable
+            @NotNull
+            final Integer id,
+
+            @Valid
+            @NotNull
+            @RequestBody
+            final PostDTOIn postIn
+
+    ) {
+        final Optional<Post> optionalPost = postService.findById(id);
 
         if (optionalPost.isPresent()) {
-            Post post = optionalPost.get();
+            final Post post = optionalPost.get();
 
-            if (user.getUsername().equals(post.getUser().getUsername())) {
-
-                return post;
+            if (user.getId().equals(post.getUser().getId())) {
+                postService.edit(post, postIn);
+                return new PostDTOOut(
+                        post.getId(),
+                        post.getTitle(),
+                        post.getBody()
+                );
+            } else {
+                throw new NoAuthorityException();
             }
         } else {
-            return null;
+            throw new ResourceNotFoundException();
         }
-        return null;
     }
 
-    @GetMapping("/posts/{id}")
-    public Post getPostWithId(@PathVariable Integer id) {
+    @GetMapping("/{id}")
+    public PostDTOOut getPostWithId(
 
-        Optional<Post> optionalPost = servicePost.findById(id);
-        if(optionalPost.isPresent()){
-            return  optionalPost.get();
+            @PathVariable
+            @NotNull
+            final Integer id
+    ) {
+
+        final Optional<Post> optionalPost = postService.findById(id);
+        if (optionalPost.isPresent()) {
+            final Post post = optionalPost.get();
+            return new PostDTOOut(
+                    post.getId(),
+                    post.getTitle(),
+                    post.getBody()
+            );
         }
-           return null;
+        throw new ResourceNotFoundException();
     }
 
-    @DeleteMapping("/post/{id}")
-    public String deletePost(@PathVariable Integer id,
-                             User user){
+    @DeleteMapping("/{id}")
+    public void deletePost(
+            @AuthenticationPrincipal(expression = "user")
+            final User user,
 
-        Optional<Post> optionalPost = servicePost.findById(id);
+            @PathVariable
+            @NotNull
+            final Integer id
+    ) {
+
+        final Optional<Post> optionalPost = postService.findById(id);
 
         if (optionalPost.isPresent()) {
-            Post post = optionalPost.get();
-
-            if (user.getUsername().equals(post.getUser().getUsername())) {
-                servicePost.delete(post);
-                return "Successful delete";
+            final Post post = optionalPost.get();
+            if (post.getUser().getId().equals(user.getId())) {
+                postService.delete(post);
+            } else {
+                throw new NoAuthorityException();
             }
-
         } else {
-            return "Post not found";
+            throw new ResourceNotFoundException();
         }
-        return "Post not found";
     }
 
 
