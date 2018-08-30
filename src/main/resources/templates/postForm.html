@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <div th:replace="/header :: headCss"/>
+    <div th:replace="/footer :: footerCss"/>
+
+</head>
+<body>
+<div th:replace="header::header"/>
+
+<h2 class="text-center">Write new post</h2>
+<form>
+
+    <div class="form-group">
+        <label th:if="${#fields.hasErrors('body')}" th:errors="*{body}"
+               class="alert alert-danger"></label>
+        <textarea  placeholder="Body"/>
+    </div>
+    <input type="submit" value="Save"/>
+</form>
+
+<div th:replace="footer::footer"/>
+
+
+</body>
+</html>

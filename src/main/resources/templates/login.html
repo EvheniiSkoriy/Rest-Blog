@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <div th:replace="/header :: headCss"/>
+    <div th:replace="/footer :: footerCss"/>
+    <style>
+        div.form {
+            width: 50%;
+            border-radius: 5px;
+            background-color: #f2f2f2;
+            margin-left:25%;
+            padding: 20px;
+            display: block;
+        }
+        input[type=text]{
+            width:70%;
+            padding: 12px 20px;
+            margin:20px 100px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+
+        }
+
+        input[type=submit] {
+            width:25%;
+            margin:20px 40%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type=submit]:hover {
+            background-color: #45a049;
+        }
+        input,label,select{
+            display: block;
+            padding: 12px 12px 12px 0;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="header::header"/>
+<div class="form">
+    <form th:action="@{/login}" method="post">
+
+        <input type="text" id="username" name="username" placeholder="Your user name..">
+        <input type="text" id="password" name="password" placeholder="Your password..">
+
+        <input type="submit" value="Login">
+    </form>
+</div>
+<div th:replace="footer::footer"/>
+</body>
+</html>
