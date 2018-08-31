@@ -36,9 +36,8 @@ public class User {
     private String lastName;
 
     @Column(name = "password")
-    @NotEmpty(message="provide valid password")
+
     @Length(min=5, message = "Your password must contain at least 5 chars")
-    @JsonIgnore
     private String password;
 
     @Column(name = "email", unique = true)

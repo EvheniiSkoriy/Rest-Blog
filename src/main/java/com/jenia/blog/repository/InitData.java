@@ -43,7 +43,6 @@ public class InitData implements CommandLineRunner {
         final Role role = new Role();
         role.setRole("PUBLISHER");
         u.addRole(role);
-
         userRepository.save(u);
         userRepository.save(u1);
 
